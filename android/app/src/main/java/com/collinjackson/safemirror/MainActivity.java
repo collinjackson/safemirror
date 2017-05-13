@@ -1,4 +1,4 @@
-package com.yourcompany.safemirror;
+package com.collinjackson.safemirror;
 
 import android.os.Bundle;
 

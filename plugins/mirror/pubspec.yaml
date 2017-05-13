@@ -1,0 +1,11 @@
+name: mirror
+description: Plugin that returns images from the selfie camera.
+
+flutter:
+  plugin:
+    androidPackage: io.flutter.plugins.mirror
+    pluginClass: MirrorPlugin
+
+dependencies:
+  flutter:
+    sdk: flutter

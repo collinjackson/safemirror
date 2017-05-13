@@ -1,8 +1,13 @@
 # safemirror
 
-A new flutter project.
+A mirror that is totally Safe for Work.
 
-## Getting Started
+## Technologies Used
 
-For help getting started with Flutter, view our online
-[documentation](http://flutter.io/).
+[Camera2Basic](https://github.com/googlesamples/android-Camera2Basic)
+
+[Google Cloud Vision API](https://cloud.google.com/vision/).
+
+I learned about the [FaceApp API](https://www.faceapp.com/) from the Ruby [faceapp gem](https://github.com/t3hk0d3/ruby_faceapp).
+
+[Flutter](http://flutter.io/).

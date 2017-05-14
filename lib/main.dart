@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'dart:io';
+import 'faceapp.dart';
 import 'package:mirror/mirror.dart';
 import 'package:flutter/material.dart';
 
@@ -23,23 +25,25 @@ class SafeMirrorHome extends StatefulWidget {
   _SafeMirrorHomeState createState() => new _SafeMirrorHomeState();
 }
 
+final faceApp = new FaceApp();
+
 class _SafeMirrorHomeState extends State<SafeMirrorHome> {
-  StreamController<FileImage> _streamController = new StreamController();
-  double _imageScale = 1.0;
+  StreamController<ImageProvider> _streamController = new StreamController();
 
   void initState() {
     super.initState();
-    Mirror.openCamera().then((_) => _capturePicture());
+    Mirror.openCamera(); // .then((_) => _capturePicture());
   }
 
   _capturePicture() async {
     File file = await Mirror.captureStillPicture();
-    setState(() {
-      _imageScale += 0.00000000001;
-    });
-
-    _streamController.add(new FileImage(file, scale: _imageScale));
-    _capturePicture();
+    // kick off the next request while this is uploading
+    new Future.delayed(const Duration(milliseconds: 200), _capturePicture);
+    String code = await faceApp.upload(file);
+    ImageProvider provider = new MemoryImage(
+      await faceApp.applyFilter(code: code, filter: 'smile', cropped: false),
+    );
+    _streamController.add(provider);
   }
 
   @override dispose() {
@@ -56,12 +60,18 @@ class _SafeMirrorHomeState extends State<SafeMirrorHome> {
       body: new Center(
         child: new StreamBuilder(
           stream: _streamController.stream,
-          builder: (BuildContext context, AsyncSnapshot<FileImage> snapshot) {
+          builder: (BuildContext context, AsyncSnapshot<ImageProvider> snapshot) {
             if (snapshot.hasData)
               return new Image(image: snapshot.data, gaplessPlayback: true);
             return new CircularProgressIndicator();
           }
         )
+      ),
+      floatingActionButton: new FloatingActionButton(
+        child: new Icon(Icons.photo_camera),
+        onPressed: () {
+          _capturePicture();
+        }
       ),
     );
   }

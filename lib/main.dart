@@ -60,7 +60,7 @@ class _SafeMirrorHomeState extends State<SafeMirrorHome> {
   _capturePicture() async {
     if (!_playing)
       return;
-    File file = await Mirror.captureStillPicture(quality: 5);
+    File file = await Mirror.captureStillPicture(quality: 25);
     // kick off the next request while this is processing
     if (file == null) {
       print("Failed to capture picture; stopping");
@@ -135,7 +135,7 @@ class _SafeMirrorHomeState extends State<SafeMirrorHome> {
   Widget build(BuildContext context) {
     return new Scaffold(
       appBar: _playing ? null : new AppBar(
-        title: new Text('FutureVision'),
+        title: new Text(''),
       ),
       drawer: new Drawer(
         child: new ListView(

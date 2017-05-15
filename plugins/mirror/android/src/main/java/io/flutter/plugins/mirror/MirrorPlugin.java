@@ -527,7 +527,7 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
         // For still image captures, we use a medium size.
         List sortedSizes = Arrays.asList(map.getOutputSizes(ImageFormat.JPEG));
         Collections.sort(sortedSizes, new CompareSizesByArea());
-        Size size = (Size) sortedSizes.get(1);
+        Size size = (Size) sortedSizes.get(3);
         mImageReader = ImageReader.newInstance(size.getWidth(), size.getHeight(),
                 ImageFormat.JPEG, /*maxImages*/2);
         mImageReader.setOnImageAvailableListener(

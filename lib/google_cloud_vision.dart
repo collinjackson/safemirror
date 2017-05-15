@@ -11,8 +11,8 @@ class FaceApp {
   static const int DEVICE_ID_LENGTH = 8;
   final String deviceId = new String.fromCharCodes(
     new List.generate(
-      DEVICE_ID_LENGTH,
-      (_) => 'a'.codeUnitAt(0) + new Random().nextInt(26),
+        DEVICE_ID_LENGTH,
+          (_) => 'a'.codeUnitAt(0) + new Random().nextInt(26),
     )
   );
 
@@ -40,9 +40,6 @@ class FaceApp {
     );
     var response = await request.send();
     print('applyFilter result: ${response.statusCode} ${response.reasonPhrase} (${response.contentLength} bytes)');
-    if (response.statusCode == 200)
-      return response.stream.toBytes();
-    else
-      return null;
+    return response.stream.toBytes();
   }
 }

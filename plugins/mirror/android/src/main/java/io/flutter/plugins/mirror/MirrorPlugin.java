@@ -62,6 +62,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -114,22 +115,25 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
+    Map arguments = (Map) call.arguments;
     switch (call.method) {
       case "openCamera":
-        openCamera(0,0);
+        boolean wantFrontFacing = (boolean) arguments.get("wantFrontFacing");
+        openCamera(0,0, wantFrontFacing);
         result.success(null);
         break;
       case "closeCamera":
-        openCamera(0,0);
+        closeCamera();
         result.success(null);
         break;
       case "captureStillPicture":
+        int quality = (int) arguments.get("quality");
         if (mCaptureResult != null) {
-          mCaptureResult.error("CANCELLED", "Cancelled by another request", null);
+          mCaptureResult.success(null); // cancel previous request
         }
         mCaptureResult = result;
         mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
-        captureStillPicture();
+        captureStillPicture(quality);
         break;
       default:
         result.notImplemented();
@@ -201,12 +205,12 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
-      openCamera(width, height);
+//      openCamera(width, height);
     }
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
-      configureTransform(width, height);
+//      configureTransform(width, height);
     }
 
     @Override
@@ -342,73 +346,73 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
    */
   private int mSensorOrientation;
 
-  /**
-   * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
-   */
-  private CameraCaptureSession.CaptureCallback mCaptureCallback
-          = new CameraCaptureSession.CaptureCallback() {
-
-    private void process(CaptureResult result) {
-      switch (mState) {
-        case STATE_PREVIEW: {
-          // We have nothing to do when the camera preview is working normally.
-          break;
-        }
-        case STATE_WAITING_LOCK: {
-          Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
-          if (afState == null) {
-            captureStillPicture();
-          } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
-                  CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
-            // CONTROL_AE_STATE can be null on some devices
-            Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-            if (aeState == null ||
-                    aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
-              mState = STATE_PICTURE_TAKEN;
-              captureStillPicture();
-            } else {
-              runPrecaptureSequence();
-            }
-          }
-          break;
-        }
-        case STATE_WAITING_PRECAPTURE: {
-          // CONTROL_AE_STATE can be null on some devices
-          Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-          if (aeState == null ||
-                  aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
-                  aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED) {
-            mState = STATE_WAITING_NON_PRECAPTURE;
-          }
-          break;
-        }
-        case STATE_WAITING_NON_PRECAPTURE: {
-          // CONTROL_AE_STATE can be null on some devices
-          Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-          if (aeState == null || aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
-            mState = STATE_PICTURE_TAKEN;
-            captureStillPicture();
-          }
-          break;
-        }
-      }
-    }
-
-    @Override
-    public void onCaptureProgressed(@NonNull CameraCaptureSession session,
-                                    @NonNull CaptureRequest request,
-                                    @NonNull CaptureResult partialResult) {
-      process(partialResult);
-    }
-
-    @Override
-    public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                   @NonNull CaptureRequest request,
-                                   @NonNull TotalCaptureResult result) {
-      process(result);
-    }
-
-  };
+//  /**
+//   * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
+//   */
+//  private CameraCaptureSession.CaptureCallback mCaptureCallback
+//          = new CameraCaptureSession.CaptureCallback() {
+//
+//    private void process(CaptureResult result) {
+//      switch (mState) {
+//        case STATE_PREVIEW: {
+//          // We have nothing to do when the camera preview is working normally.
+//          break;
+//        }
+//        case STATE_WAITING_LOCK: {
+//          Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
+//          if (afState == null) {
+//            captureStillPicture();
+//          } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
+//                  CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
+//            // CONTROL_AE_STATE can be null on some devices
+//            Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+//            if (aeState == null ||
+//                    aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
+//              mState = STATE_PICTURE_TAKEN;
+//              captureStillPicture();
+//            } else {
+//              runPrecaptureSequence();
+//            }
+//          }
+//          break;
+//        }
+//        case STATE_WAITING_PRECAPTURE: {
+//          // CONTROL_AE_STATE can be null on some devices
+//          Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+//          if (aeState == null ||
+//                  aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
+//                  aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED) {
+//            mState = STATE_WAITING_NON_PRECAPTURE;
+//          }
+//          break;
+//        }
+//        case STATE_WAITING_NON_PRECAPTURE: {
+//          // CONTROL_AE_STATE can be null on some devices
+//          Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+//          if (aeState == null || aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
+//            mState = STATE_PICTURE_TAKEN;
+//            captureStillPicture();
+//          }
+//          break;
+//        }
+//      }
+//    }
+//
+//    @Override
+//    public void onCaptureProgressed(@NonNull CameraCaptureSession session,
+//                                    @NonNull CaptureRequest request,
+//                                    @NonNull CaptureResult partialResult) {
+//      process(partialResult);
+//    }
+//
+//    @Override
+//    public void onCaptureCompleted(@NonNull CameraCaptureSession session,
+//                                   @NonNull CaptureRequest request,
+//                                   @NonNull TotalCaptureResult result) {
+//      process(result);
+//    }
+//
+//  };
 
   /**
    * Shows a {@link Toast} on the UI thread.
@@ -499,7 +503,7 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
    * @param width  The width of available size for camera preview
    * @param height The height of available size for camera preview
    */
-  private void setUpCameraOutputs(int width, int height) {
+  private void setUpCameraOutputs(int width, int height, boolean wantFrontFacing) {
     Activity activity = getActivity();
     CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
     try {
@@ -509,7 +513,8 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
 
         // We don't use a front facing camera in this sample.
         Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-        if (facing != null && facing != CameraCharacteristics.LENS_FACING_FRONT) {
+        boolean isFrontFacing = facing == CameraCharacteristics.LENS_FACING_FRONT;
+        if (facing != null && wantFrontFacing != isFrontFacing) {
           continue;
         }
 
@@ -519,11 +524,11 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
           continue;
         }
 
-        // For still image captures, we use the largest available size.
-        Size largest = Collections.max(
-                Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                new CompareSizesByArea());
-        mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
+        // For still image captures, we use a medium size.
+        List sortedSizes = Arrays.asList(map.getOutputSizes(ImageFormat.JPEG));
+        Collections.sort(sortedSizes, new CompareSizesByArea());
+        Size size = (Size) sortedSizes.get(1);
+        mImageReader = ImageReader.newInstance(size.getWidth(), size.getHeight(),
                 ImageFormat.JPEG, /*maxImages*/2);
         mImageReader.setOnImageAvailableListener(
                 mOnImageAvailableListener, mBackgroundHandler);
@@ -578,7 +583,7 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
         // garbage capture data.
         mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                 rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
-                maxPreviewHeight, largest);
+                maxPreviewHeight, size);
 
         // We fit the aspect ratio of TextureView to the size of preview we picked.
         int orientation = getActivity().getResources().getConfiguration().orientation;
@@ -603,13 +608,13 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
   /**
    * Opens the camera specified by {@link Camera2BasicFragment#mCameraId}.
    */
-  private void openCamera(int width, int height) {
+  private void openCamera(int width, int height, boolean wantFrontFacing) {
     if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) {
       requestCameraPermission();
       return;
     }
-    setUpCameraOutputs(width, height);
+    setUpCameraOutputs(width, height, wantFrontFacing);
     configureTransform(width, height);
     Activity activity = getActivity();
     CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
@@ -766,53 +771,53 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
     }
   }
 
-  /**
-   * Initiate a still image capture.
-   */
-  private void takePicture() {
-    lockFocus();
-  }
+//  /**
+//   * Initiate a still image capture.
+//   */
+//  private void takePicture() {
+//    lockFocus();
+//  }
 
-  /**
-   * Lock the focus as the first step for a still image capture.
-   */
-  private void lockFocus() {
-    try {
-      // This is how to tell the camera to lock focus.
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-              CameraMetadata.CONTROL_AF_TRIGGER_START);
-      // Tell #mCaptureCallback to wait for the lock.
-      mState = STATE_WAITING_LOCK;
-      mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-              mBackgroundHandler);
-    } catch (CameraAccessException e) {
-      e.printStackTrace();
-    }
-  }
-
-  /**
-   * Run the precapture sequence for capturing a still image. This method should be called when
-   * we get a response in {@link #mCaptureCallback} from {@link #lockFocus()}.
-   */
-  private void runPrecaptureSequence() {
-    try {
-      // This is how to tell the camera to trigger.
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
-              CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
-      // Tell #mCaptureCallback to wait for the precapture sequence to be set.
-      mState = STATE_WAITING_PRECAPTURE;
-      mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-              mBackgroundHandler);
-    } catch (CameraAccessException e) {
-      e.printStackTrace();
-    }
-  }
+//  /**
+//   * Lock the focus as the first step for a still image capture.
+//   */
+//  private void lockFocus() {
+//    try {
+//      // This is how to tell the camera to lock focus.
+//      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+//              CameraMetadata.CONTROL_AF_TRIGGER_START);
+//      // Tell #mCaptureCallback to wait for the lock.
+//      mState = STATE_WAITING_LOCK;
+//      mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
+//              mBackgroundHandler);
+//    } catch (CameraAccessException e) {
+//      e.printStackTrace();
+//    }
+//  }
+//
+//  /**
+//   * Run the precapture sequence for capturing a still image. This method should be called when
+//   * we get a response in {@link #mCaptureCallback} from {@link #lockFocus()}.
+//   */
+//  private void runPrecaptureSequence() {
+//    try {
+//      // This is how to tell the camera to trigger.
+//      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+//              CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+//      // Tell #mCaptureCallback to wait for the precapture sequence to be set.
+//      mState = STATE_WAITING_PRECAPTURE;
+//      mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
+//              mBackgroundHandler);
+//    } catch (CameraAccessException e) {
+//      e.printStackTrace();
+//    }
+//  }
 
   /**
    * Capture a still picture. This method should be called when we get a response in
    * {@link #mCaptureCallback} from both {@link #lockFocus()}.
    */
-  private void captureStillPicture() {
+  private void captureStillPicture(int quality) {
     try {
       final Activity activity = getActivity();
       if (null == activity || null == mCaptureSession) {
@@ -821,7 +826,7 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
       }
       // This is the CaptureRequest.Builder that we use to take a picture.
       final CaptureRequest.Builder captureBuilder =
-              mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+              mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
       captureBuilder.addTarget(mImageReader.getSurface());
 
       // Use the same AE and AF modes as the preview.
@@ -832,6 +837,7 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
       // Orientation
       int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
       captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
+      captureBuilder.set(CaptureRequest.JPEG_QUALITY, (byte)quality);
 
       CameraCaptureSession.CaptureCallback CaptureCallback
               = new CameraCaptureSession.CaptureCallback() {
@@ -870,27 +876,27 @@ public class MirrorPlugin implements MethodCallHandler, Application.ActivityLife
     return (ORIENTATIONS.get(rotation) + mSensorOrientation + 270) % 360;
   }
 
-  /**
-   * Unlock the focus. This method should be called when still image capture sequence is
-   * finished.
-   */
-  private void unlockFocus() {
-    try {
-      // Reset the auto-focus trigger
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-              CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-      setAutoFlash(mPreviewRequestBuilder);
-      mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-              mBackgroundHandler);
-      // After this, the camera will go back to the normal state of preview.
-      mState = STATE_PREVIEW;
-      mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback,
-              mBackgroundHandler);
-    } catch (CameraAccessException e) {
-      e.printStackTrace();
-    }
-  }
-
+//  /**
+//   * Unlock the focus. This method should be called when still image capture sequence is
+//   * finished.
+//   */
+//  private void unlockFocus() {
+//    try {
+//      // Reset the auto-focus trigger
+//      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+//              CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+//      setAutoFlash(mPreviewRequestBuilder);
+//      mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
+//              mBackgroundHandler);
+//      // After this, the camera will go back to the normal state of preview.
+//      mState = STATE_PREVIEW;
+//      mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback,
+//              mBackgroundHandler);
+//    } catch (CameraAccessException e) {
+//      e.printStackTrace();
+//    }
+//  }
+//
 
   private void setAutoFlash(CaptureRequest.Builder requestBuilder) {
     if (mFlashSupported) {
